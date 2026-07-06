@@ -3,26 +3,22 @@ package com.gestorReservas.Service;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.User;
 import com.gestorReservas.Repository.BusinessRespository;
-import com.gestorReservas.Repository.ServiceRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.util.List;
 
 @Service
 public class BusinessService {
 
     private final BusinessRespository businessRespository;
     private final UserRepository userRepository;
-    private final ServiceRepository serviceRepository;
 
-    public BusinessService(BusinessRespository businessRespository, UserRepository userRepository, ServiceRepository serviceRepository) {
+    public BusinessService(BusinessRespository businessRespository, UserRepository userRepository) {
         this.businessRespository = businessRespository;
         this.userRepository = userRepository;
-        this.serviceRepository = serviceRepository;
     }
 
     public String createBusiness(Principal principal, String name, String slug,
