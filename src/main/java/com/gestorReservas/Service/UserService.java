@@ -1,5 +1,6 @@
 package com.gestorReservas.Service;
 
+import com.gestorReservas.Dto.UserDto;
 import com.gestorReservas.Model.User;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -13,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.Principal;
 import java.util.Optional;
 
 @Service
@@ -58,7 +60,15 @@ public class UserService {
         throw new ApiException(HttpStatus.UNAUTHORIZED, "credenciales incorrectas");
     }
 
-
-
     }
+
+    public UserDto Me(Principal principal) {
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "usuario no encontrado"));
+
+        return UserDto.from(user);
+    }
+
+
 }
