@@ -21,6 +21,7 @@ public class BusinessServiceService {
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
 
+
     public BusinessServiceService(UserRepository userRepository, ServiceRepository serviceRepository) {
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
@@ -60,4 +61,46 @@ public class BusinessServiceService {
         }
         return resultado;
     }
+
+    public String editProduct(Principal principal,String name, BigDecimal price, int duration, Long id){
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        if(user.getBusiness() == null){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
+        Service service = serviceRepository.findById(id)
+                .orElseThrow(()-> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
+
+        if(!service.getBusiness().getBusinessId().equals(user.getBusiness().getBusinessId())){
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        service.setName(name);
+        service.setPrice(price);
+        service.setDuration(duration);
+        serviceRepository.save(service);
+
+        return "servicio modificado";
+    }
+
+    public String deleteservice(Principal principal, Long id){
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Service service = serviceRepository.findById(id)
+                .orElseThrow(()-> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
+
+        if(!service.getBusiness().getBusinessId().equals(user.getBusiness().getBusinessId())){
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        serviceRepository.delete(service);
+
+        return "servicio eliminado";
+    }
+
 }
