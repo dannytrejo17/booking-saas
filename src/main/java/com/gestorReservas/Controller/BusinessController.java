@@ -1,14 +1,12 @@
 package com.gestorReservas.Controller;
 
+import com.gestorReservas.Dto.BusinessDto;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Service.BusinessService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 
@@ -27,5 +25,22 @@ public class BusinessController {
         String status = businessService.createBusiness(principal, business.getName(), business.getSlug(),
                 business.getEmail(), business.getPhone(), business.getAddress(), business.getLogo() );
         return new ResponseEntity<>(status, HttpStatus.CREATED);
+    }
+
+    @PutMapping()
+    public ResponseEntity<String> EditBusiness(@RequestBody BusinessDto businessDto, Principal principal){
+
+        String status = businessService.editBusiness(businessDto.getName(),businessDto.getSlug()
+                , businessDto.getEmail(), businessDto.getPhone(), businessDto.getAddress(), businessDto.getLogo(), principal );
+
+        return new ResponseEntity<>(status, HttpStatus.OK);
+
+    }
+
+    @DeleteMapping()
+    public ResponseEntity<String> DeleteBusiness(Principal principal){
+
+        String status = businessService.deleteBusiness(principal);
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 }
