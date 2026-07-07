@@ -32,6 +32,14 @@ public class BusinessServiceService {
         User user = userRepository.findByEmail(principal.getName())
                 .orElseThrow(()-> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
 
+        if (user.getBusiness() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
+        if (price == null || price.signum() <= 0 || duration <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "precio y duración deben ser mayores que 0");
+        }
+
         Service service = new Service();
         service.setBusiness(user.getBusiness());
         service.setName(name);
@@ -42,9 +50,6 @@ public class BusinessServiceService {
     }
 
     public List<ServiceDto> getAll(Principal principal) {
-        if (principal == null) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado");
-        }
 
         User user = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
@@ -78,6 +83,10 @@ public class BusinessServiceService {
             throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
         }
 
+        if (price == null || price.signum() <= 0 || duration <= 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "precio y duración deben ser mayores que 0");
+        }
+
         service.setName(name);
         service.setPrice(price);
         service.setDuration(duration);
@@ -91,6 +100,10 @@ public class BusinessServiceService {
         User user = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
 
+        if (user.getBusiness() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
         Service service = serviceRepository.findById(id)
                 .orElseThrow(()-> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
 
@@ -102,5 +115,7 @@ public class BusinessServiceService {
 
         return "servicio eliminado";
     }
+
+
 
 }
