@@ -15,13 +15,13 @@ import java.util.List;
 @Service
 public class BusinessService {
 
-    private final BusinessRepository businessRespository;
+    private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
 
 
-    public BusinessService(BusinessRepository businessRespository, UserRepository userRepository, ServiceRepository serviceRepository) {
-        this.businessRespository = businessRespository;
+    public BusinessService(BusinessRepository businessRepository, UserRepository userRepository, ServiceRepository serviceRepository) {
+        this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
 
@@ -43,7 +43,7 @@ public class BusinessService {
         business.setPhone(phone);
         business.setAddress(address);
         business.setLogo(logo);
-        businessRespository.save(business);
+        businessRepository.save(business);
 
         owner.setBusiness(business);
         userRepository.save(owner);
@@ -61,7 +61,7 @@ public class BusinessService {
         }
 
         String normalizedSlug = slug.trim().toLowerCase();
-        if (businessRespository.existsBySlug(normalizedSlug)) {
+        if (businessRepository.existsBySlug(normalizedSlug)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "el slug ya esta en uso");
         }
     }
@@ -87,7 +87,7 @@ public class BusinessService {
         business.setPhone(phone);
         business.setAddress(address);
         business.setLogo(logo);
-        businessRespository.save(business);
+        businessRepository.save(business);
 
         return "negocio editado";
     }
@@ -110,7 +110,7 @@ public class BusinessService {
 
         user.setBusiness(null);
         userRepository.save(user);
-        businessRespository.delete(business);
+        businessRepository.delete(business);
 
         return "negocio eliminado";
     }
