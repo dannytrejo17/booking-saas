@@ -2,7 +2,7 @@ package com.gestorReservas.Service;
 
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.User;
-import com.gestorReservas.Repository.BusinessRespository;
+import com.gestorReservas.Repository.BusinessRepository;
 import com.gestorReservas.Repository.ServiceRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -15,12 +15,12 @@ import java.util.List;
 @Service
 public class BusinessService {
 
-    private final BusinessRespository businessRespository;
+    private final BusinessRepository businessRespository;
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
 
 
-    public BusinessService(BusinessRespository businessRespository, UserRepository userRepository, ServiceRepository serviceRepository) {
+    public BusinessService(BusinessRepository businessRespository, UserRepository userRepository, ServiceRepository serviceRepository) {
         this.businessRespository = businessRespository;
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
