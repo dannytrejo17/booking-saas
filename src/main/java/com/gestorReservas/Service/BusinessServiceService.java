@@ -4,6 +4,7 @@ import com.gestorReservas.Dto.ServiceDto;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.Service;
 import com.gestorReservas.Model.User;
+import com.gestorReservas.Repository.BusinessRepository;
 import com.gestorReservas.Repository.ServiceRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -20,11 +21,14 @@ public class BusinessServiceService {
 
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
+    private final BusinessRepository businessRepository;
 
 
-    public BusinessServiceService(UserRepository userRepository, ServiceRepository serviceRepository) {
+    public BusinessServiceService(UserRepository userRepository, ServiceRepository serviceRepository,
+                                  BusinessRepository businessRepository) {
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
+        this.businessRepository = businessRepository;
     }
 
     public String createService(Principal principal, String name, BigDecimal price, int duration){
@@ -58,6 +62,18 @@ public class BusinessServiceService {
         if (business == null) {
             return Collections.emptyList();
         }
+
+        List<Service> services = serviceRepository.findByBusiness_BusinessId(business.getBusinessId());
+        List<ServiceDto> resultado = new ArrayList<>();
+        for (Service service : services) {
+            resultado.add(ServiceDto.from(service));
+        }
+        return resultado;
+    }
+
+    public List<ServiceDto> getAllBySlug(String slug) {
+        Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
 
         List<Service> services = serviceRepository.findByBusiness_BusinessId(business.getBusinessId());
         List<ServiceDto> resultado = new ArrayList<>();

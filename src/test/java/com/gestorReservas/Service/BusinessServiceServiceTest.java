@@ -3,6 +3,7 @@ package com.gestorReservas.Service;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.Service;
 import com.gestorReservas.Model.User;
+import com.gestorReservas.Repository.BusinessRepository;
 import com.gestorReservas.Repository.ServiceRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -28,6 +29,8 @@ class BusinessServiceServiceTest {
     private UserRepository userRepository;
     @Mock
     private ServiceRepository serviceRepository;
+    @Mock
+    private BusinessRepository businessRepository;
 
     @InjectMocks
     private BusinessServiceService businessServiceService;
