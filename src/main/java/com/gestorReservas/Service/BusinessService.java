@@ -120,5 +120,12 @@ public class BusinessService {
     }
 
 
+    public BusinessDto getBusinessBySlug(String slug) {
+        Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
+        return BusinessDto.from(business);
+    }
+
+
 
 }

@@ -4,6 +4,7 @@ import com.gestorReservas.Dto.EmployeeDto;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.Employee;
 import com.gestorReservas.Model.User;
+import com.gestorReservas.Repository.BusinessRepository;
 import com.gestorReservas.Repository.EmployeeRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -21,10 +22,12 @@ public class EmployeeService {
 
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
+    private final BusinessRepository businessRepository;
 
-    public EmployeeService(UserRepository userRepository, EmployeeRepository employeeRepository) {
+    public EmployeeService(UserRepository userRepository, EmployeeRepository employeeRepository, BusinessRepository businessRepository) {
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
+        this.businessRepository = businessRepository;
     }
 
     public String createEmployee(Principal principal, String name) {
@@ -115,5 +118,20 @@ public class EmployeeService {
         employeeRepository.delete(employee);
 
         return "empleado eliminado";
+    }
+
+
+    public List<EmployeeDto> getAllBySlug(String slug) {
+        Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
+
+        List<Employee> employees = employeeRepository.findByBusinessBusinessId(business.getBusinessId());
+        List<EmployeeDto> resultado = new ArrayList<>();
+        for (Employee employee : employees) {
+            if (employee.isActive()) {
+                resultado.add(EmployeeDto.from(employee));
+            }
+        }
+        return resultado;
     }
 }
