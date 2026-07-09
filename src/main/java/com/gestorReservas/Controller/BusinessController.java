@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/business")
@@ -21,10 +22,10 @@ public class BusinessController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<String> createBusiness(@RequestBody Business business, Principal principal){
+    public ResponseEntity<Map<String,String>> createBusiness(@RequestBody Business business, Principal principal){
         String status = businessService.createBusiness(principal, business.getName(), business.getSlug(),
                 business.getEmail(), business.getPhone(), business.getAddress(), business.getLogo() );
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @PutMapping()

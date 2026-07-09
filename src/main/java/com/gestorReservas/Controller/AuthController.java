@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -21,15 +23,15 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user){
+    public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
         String status = userService.register(user.getName(), user.getEmail(), user.getPassword());
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody User user){
-        String status = userService.login(user.getEmail(), user.getPassword());
-        return new ResponseEntity<>(status,HttpStatus.OK);
+    public ResponseEntity<Map<String,String>> login(@RequestBody User user){
+        String token = userService.login(user.getEmail(), user.getPassword());
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
 }
