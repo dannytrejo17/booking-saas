@@ -1,5 +1,6 @@
 package com.gestorReservas.Service;
 
+import com.gestorReservas.Dto.BookingDto;
 import com.gestorReservas.Model.Booking;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.Employee;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @org.springframework.stereotype.Service
@@ -97,29 +100,117 @@ public class BookingService {
         booking.setEmployee(employee);
         booking.setStartAt(startAt);
         booking.setCustomerName(customerName.trim());
-        booking.setCustomerPhone(customerPhone.trim());
+        booking.setCustomerPhone(customerPhone.trim()); 
         booking.setCreated_at(LocalDateTime.now());
         bookingRepository.save(booking);
 
         return "reserva creada";
     }
 
-    private boolean hasOverlap(Long employeeId, LocalDateTime newStartAt, LocalDateTime newEndAt, Long excludeBookingId) {
-        List<Booking> existingBookings = bookingRepository.findByEmployeeId(employeeId);
+    private boolean hasOverlap(Long employeeId, LocalDateTime requestedStartAt, LocalDateTime requestedEndAt, Long currentBookingId) {
+        List<Booking> employeeBookings = bookingRepository.findByEmployeeId(employeeId);
 
-        for (Booking existing : existingBookings) {
-            if (excludeBookingId != null && excludeBookingId.equals(existing.getId())) {
+        for (Booking employeeBooking : employeeBookings) {
+            if (currentBookingId != null && currentBookingId.equals(employeeBooking.getId())) {
                 continue;
             }
 
-            LocalDateTime existingStartAt = existing.getStartAt();
-            LocalDateTime existingEndAt = existingStartAt.plusMinutes(existing.getService().getDuration());
+            LocalDateTime bookingStartAt = employeeBooking.getStartAt();
+            LocalDateTime bookingEndAt = bookingStartAt.plusMinutes(employeeBooking.getService().getDuration());
 
-            if (newStartAt.isBefore(existingEndAt) && newEndAt.isAfter(existingStartAt)) {
+            if (requestedStartAt.isBefore(bookingEndAt) && requestedEndAt.isAfter(bookingStartAt)) {
                 return true;
             }
         }
 
         return false;
     }
+
+    public List<BookingDto> getAll(Principal principal) {
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            return Collections.emptyList();
+        }
+
+        List<Booking> bookings = bookingRepository.findByBusinessBusinessId(business.getBusinessId());
+        List<BookingDto> resultado = new ArrayList<>();
+        for (Booking booking : bookings) {
+            resultado.add(BookingDto.from(booking));
+        }
+        return resultado;
+    }
+
+
+    public String editBooking(Principal principal, Long id, Long serviceId, Long employeeId,
+            LocalDateTime startAt, String customerName, String customerPhone){
+
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
+        if (serviceId == null || startAt == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "serviceId y startAt son obligatorios");
+        }
+
+        if (customerName == null || customerName.trim().isEmpty()
+                || customerPhone == null || customerPhone.trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "customerName y customerPhone son obligatorios");
+        }
+
+        if (startAt.isBefore(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "startAt no puede ser en el pasado");
+        }
+
+        Service service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
+
+        if (!service.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+
+        Employee employee = null;
+        if (employeeId != null) {
+            employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "empleado no encontrado"));
+
+            if (!employee.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+            }
+
+            if (!employee.isActive()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
+            }
+
+            LocalDateTime newEndAt = startAt.plusMinutes(service.getDuration());
+            if (hasOverlap(employee.getId(), startAt, newEndAt, id)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado ya tiene una reserva en ese horario");
+            }
+        }
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "reserva no encontrada"));
+
+        if (!booking.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        booking.setEmployee(employee);
+        booking.setService(service);
+        booking.setCustomerName(customerName);
+        booking.setCustomerPhone(customerPhone);
+        booking.setStartAt(startAt);
+        bookingRepository.save(booking);
+
+        return "reserva modificada";
+    }
 }
+
