@@ -41,8 +41,7 @@ public class BookingController {
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> editBooking(
-            @PathVariable Long id,
+    public ResponseEntity<String> editBooking(@PathVariable Long id,
             @RequestBody BookingRequest req,
             Principal principal
     ) {
@@ -58,6 +57,4 @@ public class BookingController {
         String status = bookingService.deleteBooking(principal, id);
         return ResponseEntity.ok(status);
     }
-
-
 }

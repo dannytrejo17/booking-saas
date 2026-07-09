@@ -6,10 +6,7 @@ import com.gestorReservas.Model.Business;
 import com.gestorReservas.Model.Employee;
 import com.gestorReservas.Model.Service;
 import com.gestorReservas.Model.User;
-import com.gestorReservas.Repository.BookingRepository;
-import com.gestorReservas.Repository.EmployeeRepository;
-import com.gestorReservas.Repository.ServiceRepository;
-import com.gestorReservas.Repository.UserRepository;
+import com.gestorReservas.Repository.*;
 import com.gestorReservas.exception.ApiException;
 import org.springframework.http.HttpStatus;
 
@@ -26,17 +23,19 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final ServiceRepository serviceRepository;
     private final EmployeeRepository employeeRepository;
+    private final BusinessRepository businessRepository;
 
     public BookingService(
             UserRepository userRepository,
             BookingRepository bookingRepository,
             ServiceRepository serviceRepository,
-            EmployeeRepository employeeRepository
+            EmployeeRepository employeeRepository, BusinessRepository businessRepository
     ) {
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.serviceRepository = serviceRepository;
         this.employeeRepository = employeeRepository;
+        this.businessRepository = businessRepository;
     }
 
     public String createBooking(
@@ -234,6 +233,65 @@ public class BookingService {
         bookingRepository.delete(booking);
 
         return "reserva eliminada";
+    }
+
+
+    public String createPublicBooking(String slug, Long serviceId, Long employeeId, LocalDateTime startAt,
+                                      String customerName, String customerPhone) {
+
+        Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
+
+        if (serviceId == null || startAt == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "serviceId y startAt son obligatorios");
+        }
+
+        if (customerName == null || customerName.trim().isEmpty()
+                || customerPhone == null || customerPhone.trim().isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "customerName y customerPhone son obligatorios");
+        }
+
+        if (startAt.isBefore(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "startAt no puede ser en el pasado");
+        }
+
+        Service service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
+
+        if (!service.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        Employee employee = null;
+        if (employeeId != null) {
+            employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "empleado no encontrado"));
+
+            if (!employee.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+            }
+
+            if (!employee.isActive()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
+            }
+
+            LocalDateTime newEndAt = startAt.plusMinutes(service.getDuration());
+            if (hasOverlap(employee.getId(), startAt, newEndAt, null)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado ya tiene una reserva en ese horario");
+            }
+        }
+
+        Booking booking = new Booking();
+        booking.setBusiness(business);
+        booking.setService(service);
+        booking.setEmployee(employee);
+        booking.setStartAt(startAt);
+        booking.setCustomerName(customerName.trim());
+        booking.setCustomerPhone(customerPhone.trim());
+        booking.setCreated_at(LocalDateTime.now());
+        bookingRepository.save(booking);
+
+        return "reserva creada";
     }
 }
 
