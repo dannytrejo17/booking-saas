@@ -205,12 +205,35 @@ public class BookingService {
 
         booking.setEmployee(employee);
         booking.setService(service);
-        booking.setCustomerName(customerName);
-        booking.setCustomerPhone(customerPhone);
+        booking.setCustomerName(customerName.trim());
+        booking.setCustomerPhone(customerPhone.trim());
         booking.setStartAt(startAt);
         bookingRepository.save(booking);
 
         return "reserva modificada";
+    }
+
+
+    public String deleteBooking(Principal principal, Long id) {
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "reserva no encontrada"));
+
+        if(!user.getBusiness().getBusinessId().equals(booking.getBusiness().getBusinessId())){
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        bookingRepository.delete(booking);
+
+        return "reserva eliminada";
     }
 }
 

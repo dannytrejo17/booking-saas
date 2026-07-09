@@ -46,15 +46,18 @@ public class BookingController {
             @RequestBody BookingRequest req,
             Principal principal
     ) {
-        String status = bookingService.editBooking(
-                principal,
-                id,
-                req.getServiceId(),
-                req.getEmployeeId(),
-                req.getStartAt(),
-                req.getCustomerName(),
-                req.getCustomerPhone()
+        String status = bookingService.editBooking(principal, id, req.getServiceId(), req.getEmployeeId(),
+                req.getStartAt(), req.getCustomerName(), req.getCustomerPhone()
         );
         return ResponseEntity.ok(status);
     }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteBooking(@PathVariable Long id, Principal principal){
+        String status = bookingService.deleteBooking(principal, id);
+        return ResponseEntity.ok(status);
+    }
+
+
 }
