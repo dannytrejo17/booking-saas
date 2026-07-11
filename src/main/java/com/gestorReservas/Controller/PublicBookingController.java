@@ -2,9 +2,14 @@ package com.gestorReservas.Controller;
 
 import com.gestorReservas.Dto.BookingRequest;
 import com.gestorReservas.Service.BookingService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 
 @RestController
@@ -29,5 +34,16 @@ public class PublicBookingController {
                 req.getCustomerPhone()
         );
         return new ResponseEntity<>(status, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<List<LocalDateTime>> getAvailability(
+            @PathVariable String slug,
+            @RequestParam Long serviceId,
+            @RequestParam Long employeeId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        List<LocalDateTime> slots = bookingService.getAvailability(slug, serviceId, employeeId, date);
+        return ResponseEntity.ok(slots);
     }
 }

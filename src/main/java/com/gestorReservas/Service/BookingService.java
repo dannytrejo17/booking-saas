@@ -11,7 +11,9 @@ import com.gestorReservas.exception.ApiException;
 import org.springframework.http.HttpStatus;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -292,6 +294,52 @@ public class BookingService {
         bookingRepository.save(booking);
 
         return "reserva creada";
+    }
+
+    public List<LocalDateTime> getAvailability(String slug, Long serviceId, Long employeeId, LocalDate date) {
+        Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
+
+        if (serviceId == null || employeeId == null || date == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "serviceId, employeeId y date son obligatorios");
+        }
+
+        Service service = serviceRepository.findById(serviceId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "servicio no encontrado"));
+
+        if (!service.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "empleado no encontrado"));
+
+        if (!employee.getBusiness().getBusinessId().equals(business.getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        if (!employee.isActive()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
+        }
+
+        int duration = service.getDuration();
+        LocalDateTime slot = date.atTime(LocalTime.of(9, 0));
+        LocalDateTime endOfDay = date.atTime(LocalTime.of(18, 0));
+        LocalDateTime now = LocalDateTime.now();
+
+        List<LocalDateTime> available = new ArrayList<>();
+
+        while (!slot.plusMinutes(duration).isAfter(endOfDay)) {
+            if (!slot.isBefore(now)) {
+                LocalDateTime end = slot.plusMinutes(duration);
+                if (!hasOverlap(employee.getId(), slot, end, null)) {
+                    available.add(slot);
+                }
+            }
+            slot = slot.plusMinutes(30);
+        }
+
+        return available;
     }
 }
 
