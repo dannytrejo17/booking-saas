@@ -1,11 +1,12 @@
 package com.gestorReservas.Service;
 
-import com.gestorReservas.Dto.BookingDto;
 import com.gestorReservas.Dto.BusinessDto;
-import com.gestorReservas.Model.Booking;
+import com.gestorReservas.Dto.ScheduleDto;
 import com.gestorReservas.Model.Business;
+import com.gestorReservas.Model.BusinessSchedule;
 import com.gestorReservas.Model.User;
 import com.gestorReservas.Repository.BusinessRepository;
+import com.gestorReservas.Repository.BusinessScheduleRepository;
 import com.gestorReservas.Repository.ServiceRepository;
 import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
@@ -13,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.security.Principal;
-import java.time.LocalDateTime;
+import java.time.DayOfWeek;
+import java.util.ArrayList;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -22,13 +25,14 @@ public class BusinessService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
+    private final BusinessScheduleRepository businessScheduleRepository;
 
 
-    public BusinessService(BusinessRepository businessRepository, UserRepository userRepository, ServiceRepository serviceRepository) {
+    public BusinessService(BusinessRepository businessRepository, UserRepository userRepository, ServiceRepository serviceRepository, BusinessScheduleRepository businessScheduleRepository) {
         this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
-
+        this.businessScheduleRepository = businessScheduleRepository;
     }
 
     public String createBusiness(Principal principal, String name, String slug,
@@ -127,5 +131,68 @@ public class BusinessService {
     }
 
 
+
+    public String createSchedule(Principal principal,
+    LocalTime openTime,
+    LocalTime closeTime,
+    DayOfWeek dayOfWeek
+    ){
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes negocio");
+        }
+
+        if (openTime == null || closeTime == null || !openTime.isBefore(closeTime)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "horario invalido");
+        }
+
+
+        if (dayOfWeek == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "dayOfWeek es obligatorio");
+        }
+
+        boolean exists = businessScheduleRepository.existsByBusinessAndDayOfWeekAndOpenTimeAndCloseTime(
+                business, dayOfWeek, openTime, closeTime);
+        if (exists) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "ese horario ya existe");
+        }
+
+        BusinessSchedule businessSchedule = new BusinessSchedule();
+
+        businessSchedule.setBusiness(business);
+        businessSchedule.setOpenTime(openTime);
+        businessSchedule.setCloseTime(closeTime);
+        businessSchedule.setDayOfWeek(dayOfWeek);
+        businessScheduleRepository.save(businessSchedule);
+
+        return "horario creado";
+    }
+
+
+    public List<ScheduleDto> getSchedule(Principal principal) {
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes negocio");
+        }
+
+        List<BusinessSchedule> schedules = businessScheduleRepository.findByBusiness_BusinessId(business.getBusinessId());
+
+        List<ScheduleDto> result = new ArrayList<>();
+        for (BusinessSchedule schedule : schedules) {
+            result.add(ScheduleDto.from(schedule));
+        }
+
+        return result;
+
+
+    }
 
 }
