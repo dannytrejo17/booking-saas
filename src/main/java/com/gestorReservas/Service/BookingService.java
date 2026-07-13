@@ -3,17 +3,18 @@ package com.gestorReservas.Service;
 import com.gestorReservas.Dto.BookingDto;
 import com.gestorReservas.Model.Booking;
 import com.gestorReservas.Model.Business;
+import com.gestorReservas.Model.BusinessSchedule;
 import com.gestorReservas.Model.Employee;
 import com.gestorReservas.Model.Service;
 import com.gestorReservas.Model.User;
 import com.gestorReservas.Repository.*;
 import com.gestorReservas.exception.ApiException;
 import org.springframework.http.HttpStatus;
-
+import java.time.LocalTime;
 import java.security.Principal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,18 +27,20 @@ public class BookingService {
     private final ServiceRepository serviceRepository;
     private final EmployeeRepository employeeRepository;
     private final BusinessRepository businessRepository;
+    private final BusinessScheduleRepository businessScheduleRepository;
 
     public BookingService(
             UserRepository userRepository,
             BookingRepository bookingRepository,
             ServiceRepository serviceRepository,
-            EmployeeRepository employeeRepository, BusinessRepository businessRepository
+            EmployeeRepository employeeRepository, BusinessRepository businessRepository, BusinessScheduleRepository businessScheduleRepository
     ) {
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
         this.serviceRepository = serviceRepository;
         this.employeeRepository = employeeRepository;
         this.businessRepository = businessRepository;
+        this.businessScheduleRepository = businessScheduleRepository;
     }
 
     public String createBooking(
@@ -238,6 +241,8 @@ public class BookingService {
     }
 
 
+
+
     public String createPublicBooking(String slug, Long serviceId, Long employeeId, LocalDateTime startAt,
                                       String customerName, String customerPhone) {
 
@@ -264,6 +269,32 @@ public class BookingService {
             throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
         }
 
+
+        DayOfWeek dayOfWeek = startAt.getDayOfWeek();
+        List<BusinessSchedule> schedules = businessScheduleRepository.findByBusiness_BusinessIdAndDayOfWeek(business.getBusinessId(), dayOfWeek);
+        if(schedules.isEmpty()){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "el negocio no abre ese día");
+        }
+        
+        boolean isAvailable = false;
+        LocalTime startTime = startAt.toLocalTime();
+        LocalTime endTime = startTime.plusMinutes(service.getDuration());
+
+        for (BusinessSchedule schedule : schedules) {
+            LocalTime openTime = schedule.getOpenTime();
+            LocalTime closeTime = schedule.getCloseTime();
+
+            if(startAt.toLocalTime().isAfter(openTime) && startAt.toLocalTime().isBefore(closeTime) 
+            && !endTime.isAfter(closeTime)){
+                isAvailable = true;
+                break;
+            }
+        }
+        if(!isAvailable){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "el negocio no abre ese horario");
+        }
+
+
         Employee employee = null;
         if (employeeId != null) {
             employee = employeeRepository.findById(employeeId)
@@ -277,6 +308,7 @@ public class BookingService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
             }
 
+        
             LocalDateTime newEndAt = startAt.plusMinutes(service.getDuration());
             if (hasOverlap(employee.getId(), startAt, newEndAt, null)) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado ya tiene una reserva en ese horario");
@@ -322,24 +354,38 @@ public class BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
         }
 
+
+
         int duration = service.getDuration();
-        LocalDateTime slot = date.atTime(LocalTime.of(9, 0));
-        LocalDateTime endOfDay = date.atTime(LocalTime.of(18, 0));
-        LocalDateTime now = LocalDateTime.now();
+
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        List<BusinessSchedule> schedules = businessScheduleRepository
+                .findByBusiness_BusinessIdAndDayOfWeek(business.getBusinessId(), dayOfWeek);
+
+        if (schedules.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         List<LocalDateTime> available = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
 
-        while (!slot.plusMinutes(duration).isAfter(endOfDay)) {
-            if (!slot.isBefore(now)) {
-                LocalDateTime end = slot.plusMinutes(duration);
-                if (!hasOverlap(employee.getId(), slot, end, null)) {
-                    available.add(slot);
+        for (BusinessSchedule schedule : schedules) {
+            LocalTime openTime = schedule.getOpenTime();
+            LocalTime closeTime = schedule.getCloseTime();
+
+            LocalDateTime startCandidate = date.atTime(openTime);
+            LocalDateTime endOfDay = date.atTime(closeTime);
+
+            while (!startCandidate.plusMinutes(duration).isAfter(endOfDay)) {
+                if (!startCandidate.isBefore(now)) {
+                    LocalDateTime endofService = startCandidate.plusMinutes(duration);
+                    if(!hasOverlap(employee.getId(), startCandidate, endofService, null))
+                        available.add(startCandidate);
                 }
+                startCandidate = startCandidate.plusMinutes(30);
             }
-            slot = slot.plusMinutes(30);
         }
 
         return available;
     }
 }
-
