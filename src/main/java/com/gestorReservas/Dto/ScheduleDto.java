@@ -1,6 +1,7 @@
 package com.gestorReservas.Dto;
 
 import com.gestorReservas.Model.BusinessSchedule;
+import com.gestorReservas.Model.EmployeeSchedule;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,15 @@ public class ScheduleDto {
                 s.getDayOfWeek(),
                 s.getOpenTime(),
                 s.getCloseTime()
+        );
+    }
+
+    public static ScheduleDto from(EmployeeSchedule e){
+        return new ScheduleDto(
+                e.getId(),
+                e.getDayOfWeek(),
+                e.getOpenTime(),
+                e.getCloseTime()
         );
     }
 }
