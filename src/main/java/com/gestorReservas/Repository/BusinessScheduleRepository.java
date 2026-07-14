@@ -19,5 +19,6 @@ public interface BusinessScheduleRepository extends JpaRepository<BusinessSchedu
 
     List<BusinessSchedule> findByBusiness_BusinessIdAndDayOfWeek(Long businessId, DayOfWeek dayOfWeek);
 
-    
+
+    List<BusinessSchedule> findByDayOfWeekAndBusiness_BusinessId(DayOfWeek dayOfWeek, Long id);
 }

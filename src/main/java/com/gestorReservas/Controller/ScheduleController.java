@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.DayOfWeek;
 import java.util.List;
 
 @RestController
@@ -36,5 +37,12 @@ public class ScheduleController {
     public ResponseEntity<List<ScheduleDto>> getSchedule(Principal principal) {
         List<ScheduleDto> schedules = businessService.getSchedule(principal);
         return ResponseEntity.ok(schedules);
+    }
+
+
+    @DeleteMapping()
+    public ResponseEntity<String> deleteSchedule(@RequestParam  DayOfWeek dayOfWeek, Principal principal){
+        String status = businessService.deleteSchedule(dayOfWeek, principal);
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 }

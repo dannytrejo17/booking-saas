@@ -195,4 +195,30 @@ public class BusinessService {
 
     }
 
+    public String deleteSchedule(DayOfWeek dayOfWeek , Principal principal){
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes negocio");
+        }
+
+        if(dayOfWeek == null){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "el dia es obligatorio");
+        }
+
+        List<BusinessSchedule> schedules = businessScheduleRepository.findByDayOfWeekAndBusiness_BusinessId(dayOfWeek, business.getBusinessId());
+        if(schedules.isEmpty()){
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no hay horario ese dia");
+        }else{
+            businessScheduleRepository.deleteAll(schedules);
+        }
+
+        return "horario eliminado";
+    }
+
 }
+
+
