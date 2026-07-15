@@ -84,8 +84,7 @@ public class BookingService {
             LocalTime openTime = schedule.getOpenTime();
             LocalTime closeTime = schedule.getCloseTime();
 
-            if(startAt.toLocalTime().isAfter(openTime) && startAt.toLocalTime().isBefore(closeTime)
-            && !endTime.isAfter(closeTime)){
+            if (!startTime.isBefore(openTime) && !endTime.isAfter(closeTime)) {
                 isAvailable = true;
                 break;
             }
@@ -346,8 +345,7 @@ public class BookingService {
             LocalTime openTime = schedule.getOpenTime();
             LocalTime closeTime = schedule.getCloseTime();
 
-            if(startAt.toLocalTime().isAfter(openTime) && startAt.toLocalTime().isBefore(closeTime) 
-            && !endTime.isAfter(closeTime)){
+            if (!startTime.isBefore(openTime) && !endTime.isAfter(closeTime)) {
                 isAvailable = true;
                 break;
             }
