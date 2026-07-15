@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -21,7 +22,7 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createBooking(@RequestBody BookingRequest req, Principal principal) {
+    public ResponseEntity<Map<String,String>> createBooking(@RequestBody BookingRequest req, Principal principal) {
         String status = bookingService.createBooking(
                 principal,
                 req.getServiceId(),
@@ -30,7 +31,7 @@ public class BookingController {
                 req.getCustomerName(),
                 req.getCustomerPhone()
         );
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @GetMapping
@@ -41,20 +42,20 @@ public class BookingController {
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> editBooking(@PathVariable Long id,
+    public ResponseEntity<Map<String,String>> editBooking(@PathVariable Long id,
             @RequestBody BookingRequest req,
             Principal principal
     ) {
         String status = bookingService.editBooking(principal, id, req.getServiceId(), req.getEmployeeId(),
                 req.getStartAt(), req.getCustomerName(), req.getCustomerPhone()
         );
-        return ResponseEntity.ok(status);
+        return ResponseEntity.ok(Map.of("message", status));
     }
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteBooking(@PathVariable Long id, Principal principal){
+    public ResponseEntity<Map<String,String>> deleteBooking(@PathVariable Long id, Principal principal){
         String status = bookingService.deleteBooking(principal, id);
-        return ResponseEntity.ok(status);
+        return ResponseEntity.ok(Map.of("message", status));
     }
 }

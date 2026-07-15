@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -24,9 +25,9 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createEmployee(@RequestBody EmployeeDto req, Principal principal) {
+    public ResponseEntity<Map<String,String>> createEmployee(@RequestBody EmployeeDto req, Principal principal) {
         String status = employeeService.createEmployee(principal, req.getName());
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @GetMapping
@@ -36,24 +37,24 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> editEmployee(@PathVariable Long id, @RequestBody EmployeeDto req, Principal principal) {
+    public ResponseEntity<Map<String,String>> editEmployee(@PathVariable Long id, @RequestBody EmployeeDto req, Principal principal) {
         String status = employeeService.editEmployee(principal, id, req.getName(), req.isActive());
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteEmployee(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Map<String,String>> deleteEmployee(@PathVariable Long id, Principal principal) {
         String status = employeeService.deleteEmployee(principal, id);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
     }
 
     @PostMapping("/{id}/schedule")
-    public ResponseEntity<String> createEmployeeSchedule(@PathVariable Long id,
+    public ResponseEntity<Map<String,String>> createEmployeeSchedule(@PathVariable Long id,
                                                          @RequestBody ScheduleRequest scheduleRequest,
                                                          Principal principal){
         String status = employeeService.createEmployeeSchedule(principal, id,
                 scheduleRequest.getDayOfWeek(), scheduleRequest.getOpenTime(), scheduleRequest.getCloseTime());
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @GetMapping("/{id}/schedule")
@@ -64,10 +65,10 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{id}/schedule")
-    public ResponseEntity<String> deleteEmployeeSchedule(@PathVariable Long id,
+    public ResponseEntity<Map<String,String>> deleteEmployeeSchedule(@PathVariable Long id,
                                                          @RequestParam DayOfWeek dayOfWeek,
                                                          Principal principal){
         String status = employeeService.deleteEmployeeSchedule(principal,id, dayOfWeek);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
     }
 }

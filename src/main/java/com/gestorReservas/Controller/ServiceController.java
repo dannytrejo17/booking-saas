@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/services")
@@ -26,11 +27,11 @@ public class ServiceController {
     }
 
     @PostMapping
-    public ResponseEntity<String> createService(@Valid  @RequestBody ServiceDto req, Principal principal){
+    public ResponseEntity<Map<String,String>> createService(@Valid  @RequestBody ServiceDto req, Principal principal){
         String status = businessServiceService.createService(principal, req.getName(),
                 req.getPrice(), req.getDuration());
 
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @GetMapping
@@ -40,18 +41,20 @@ public class ServiceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> EditServices(@PathVariable Long id, @RequestBody ServiceDto serviceDto, Principal principal){
+    public ResponseEntity<Map<String,String>> EditServices(@PathVariable Long id, @RequestBody ServiceDto serviceDto, Principal principal){
 
         String status = businessServiceService.editProduct(principal, serviceDto.getName(),
                 serviceDto.getPrice(), serviceDto.getDuration(), id );
 
-        return new  ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
+
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> DeleteService(@PathVariable Long id, Principal principal){
+    public ResponseEntity<Map<String,String>> DeleteService(@PathVariable Long id, Principal principal){
 
         String status = businessServiceService.deleteservice(principal, id);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
+
     }
 }

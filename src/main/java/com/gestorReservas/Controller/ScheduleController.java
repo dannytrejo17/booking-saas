@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/schedule")
@@ -25,13 +26,14 @@ public class ScheduleController {
 
 
     @PostMapping()
-    public ResponseEntity<String> createSchedule(@RequestBody ScheduleRequest scheduleRequest,
+    public ResponseEntity<Map<String,String>> createSchedule(@RequestBody ScheduleRequest scheduleRequest,
                                                  Principal principal){
         String status = businessService.createSchedule(principal, scheduleRequest.getOpenTime(),
                 scheduleRequest.getCloseTime(), scheduleRequest.getDayOfWeek());
-
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
+
+
 
     @GetMapping()
     public ResponseEntity<List<ScheduleDto>> getSchedule(Principal principal) {
@@ -41,8 +43,9 @@ public class ScheduleController {
 
 
     @DeleteMapping()
-    public ResponseEntity<String> deleteSchedule(@RequestParam  DayOfWeek dayOfWeek, Principal principal){
+    public ResponseEntity<Map<String,String>> deleteSchedule(@RequestParam  DayOfWeek dayOfWeek, Principal principal){
         String status = businessService.deleteSchedule(dayOfWeek, principal);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
+
     }
 }

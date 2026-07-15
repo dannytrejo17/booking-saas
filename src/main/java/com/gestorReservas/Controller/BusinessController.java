@@ -29,19 +29,19 @@ public class BusinessController {
     }
 
     @PutMapping()
-    public ResponseEntity<String> EditBusiness(@RequestBody BusinessDto businessDto, Principal principal){
+    public ResponseEntity<Map<String,String>> EditBusiness(@RequestBody BusinessDto businessDto, Principal principal){
 
         String status = businessService.editBusiness(businessDto.getName(),businessDto.getSlug()
                 , businessDto.getEmail(), businessDto.getPhone(), businessDto.getAddress(), businessDto.getLogo(), principal );
 
-        return new ResponseEntity<>(status, HttpStatus.OK);
-
+        return ResponseEntity.ok(Map.of("message", status));
     }
 
     @DeleteMapping()
-    public ResponseEntity<String> DeleteBusiness(Principal principal){
+    public ResponseEntity<Map<String,String>> DeleteBusiness(Principal principal){
 
         String status = businessService.deleteBusiness(principal);
-        return new ResponseEntity<>(status, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("message", status));
+
     }
 }

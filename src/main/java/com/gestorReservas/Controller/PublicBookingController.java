@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -21,7 +22,7 @@ public class PublicBookingController {
         this.bookingService = bookingService;
     }
     @PostMapping
-    public ResponseEntity<String> createPublicBooking(
+    public ResponseEntity<Map<String,String>> createPublicBooking(
             @PathVariable String slug,
             @RequestBody BookingRequest req
     ) {
@@ -33,7 +34,7 @@ public class PublicBookingController {
                 req.getCustomerName(),
                 req.getCustomerPhone()
         );
-        return new ResponseEntity<>(status, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @GetMapping("/availability")
@@ -47,3 +48,4 @@ public class PublicBookingController {
         return ResponseEntity.ok(slots);
     }
 }
+
