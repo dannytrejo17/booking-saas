@@ -21,6 +21,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class EmployeeService {
@@ -190,4 +191,27 @@ public class EmployeeService {
 
         return employeeSchedulesResponse;
     }
-}
+
+    public String deleteEmployeeSchedule( Principal principal, Long employeeId, DayOfWeek dayOfWeek){
+
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        if (user.getBusiness() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes un negocio");
+        }
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "empleado no encontrado"));
+
+        if (!employee.getBusiness().getBusinessId().equals(user.getBusiness().getBusinessId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "no tienes permiso");
+        }
+
+        List<EmployeeSchedule> employeeSchedules = employeeScheduleRepository.findByEmployee_IdAndDayOfWeek(employeeId, dayOfWeek);
+        employeeScheduleRepository.deleteAll(employeeSchedules);
+
+        return "horario de empleado eliminado";
+    }
+
+    }

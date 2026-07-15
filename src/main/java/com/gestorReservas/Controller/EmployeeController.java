@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.DayOfWeek;
 import java.util.List;
 
 @RestController
@@ -60,5 +61,13 @@ public class EmployeeController {
 
         List<ScheduleDto> employeeSchedule = employeeService.getEmployeeSchedule(principal, id);
         return  ResponseEntity.ok(employeeSchedule);
+    }
+
+    @DeleteMapping("/{id}/schedule")
+    public ResponseEntity<String> deleteEmployeeSchedule(@PathVariable Long id,
+                                                         @RequestParam DayOfWeek dayOfWeek,
+                                                         Principal principal){
+        String status = employeeService.deleteEmployeeSchedule(principal,id, dayOfWeek);
+        return new ResponseEntity<>(status, HttpStatus.OK);
     }
 }
