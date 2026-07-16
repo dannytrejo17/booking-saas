@@ -4,9 +4,10 @@ import com.gestorReservas.Dto.BusinessDto;
 import com.gestorReservas.Model.Business;
 import com.gestorReservas.Service.BusinessService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.Map;
@@ -35,6 +36,14 @@ public class BusinessController {
                 , businessDto.getEmail(), businessDto.getPhone(), businessDto.getAddress(), businessDto.getLogo(), principal );
 
         return ResponseEntity.ok(Map.of("message", status));
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, String>> uploadImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("type") String type,
+            Principal principal) {
+        return ResponseEntity.ok(businessService.uploadImage(file, type, principal));
     }
 
     @DeleteMapping()

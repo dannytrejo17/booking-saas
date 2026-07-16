@@ -12,12 +12,14 @@ import com.gestorReservas.Repository.UserRepository;
 import com.gestorReservas.exception.ApiException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class BusinessService {
@@ -26,13 +28,18 @@ public class BusinessService {
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
     private final BusinessScheduleRepository businessScheduleRepository;
+    private final CloudinaryService cloudinaryService;
 
 
-    public BusinessService(BusinessRepository businessRepository, UserRepository userRepository, ServiceRepository serviceRepository, BusinessScheduleRepository businessScheduleRepository) {
+    public BusinessService(BusinessRepository businessRepository, UserRepository userRepository,
+                           ServiceRepository serviceRepository,
+                           BusinessScheduleRepository businessScheduleRepository,
+                           CloudinaryService cloudinaryService) {
         this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.serviceRepository = serviceRepository;
         this.businessScheduleRepository = businessScheduleRepository;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public String createBusiness(Principal principal, String name, String slug,
@@ -128,6 +135,34 @@ public class BusinessService {
         Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
         return BusinessDto.from(business);
+    }
+
+    public Map<String, String> uploadImage(MultipartFile file, String type, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "no autenticado"));
+
+        Business business = user.getBusiness();
+        if (business == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes negocio");
+        }
+
+        if (type == null || (!type.equals("cover") && !type.equals("logo"))) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "type debe ser cover o logo");
+        }
+
+        String url = cloudinaryService.uploadImage(file, business.getBusinessId(), type);
+        if (type.equals("cover")) {
+            business.setCoverImage(url);
+        } else {
+            business.setLogo(url);
+        }
+        businessRepository.save(business);
+
+        return Map.of(
+                "message", "imagen subida",
+                "type", type,
+                "url", url
+        );
     }
 
 

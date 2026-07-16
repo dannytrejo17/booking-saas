@@ -31,6 +31,7 @@ public class Business {
     private String phone;
     private String address;
     private String logo;
+    private String coverImage;
     private LocalDateTime created_at;
     private LocalDateTime updatedAt;
 }

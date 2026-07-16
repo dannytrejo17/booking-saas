@@ -17,6 +17,7 @@ public class BusinessDto {
     private String phone;
     private String address;
     private String logo;
+    private String coverImage;
 
     public static BusinessDto from(Business business) {
         if (business == null) {
@@ -29,7 +30,8 @@ public class BusinessDto {
                 business.getEmail(),
                 business.getPhone(),
                 business.getAddress(),
-                business.getLogo()
+                business.getLogo(),
+                business.getCoverImage()
         );
     }
 }
