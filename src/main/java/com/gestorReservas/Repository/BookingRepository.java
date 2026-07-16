@@ -1,8 +1,13 @@
 package com.gestorReservas.Repository;
 
 import com.gestorReservas.Model.Booking;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -10,4 +15,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBusinessBusinessId(Long businessId);
 
     List<Booking> findByEmployeeId(Long employeeId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.service s
+        WHERE b.employee.id = :employeeId
+          AND b.startAt < :requestedEnd
+          AND (:excludeId IS NULL OR b.id <> :excludeId)
+        """)
+    List<Booking> findOverlappingWithLock(
+            @Param("employeeId") Long employeeId,
+            @Param("requestedEnd") LocalDateTime requestedEnd,
+            @Param("excludeId") Long excludeId
+    );
 }
