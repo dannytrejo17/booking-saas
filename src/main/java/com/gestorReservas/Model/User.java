@@ -28,6 +28,9 @@ public class User implements UserDetails {
     private String email;
     private String password;
     private String role;
+    private boolean enabled = true;
+    private String verificationCode;
+    private LocalDateTime verificationCodeExpiresAt;
     private LocalDateTime created_at;
     private LocalDateTime updated_at;
 
@@ -58,6 +61,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return enabled;
     }
 }
