@@ -1,6 +1,6 @@
 package com.gestorReservas.Controller;
 
-import com.gestorReservas.Service.UserService;
+import com.gestorReservas.Service.AuthService;
 import com.gestorReservas.exception.ApiException;
 import com.gestorReservas.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,7 +16,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,11 +25,11 @@ class AuthControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private UserService userService;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        AuthController controller = new AuthController(userService);
+        AuthController controller = new AuthController(authService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -38,7 +37,7 @@ class AuthControllerTest {
 
     @Test
     void register_devuelve201YJson() throws Exception {
-        when(userService.register(anyString(), anyString(), anyString())).thenReturn("usuario creado");
+        when(authService.register(anyString(), anyString(), anyString())).thenReturn("usuario creado");
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +50,7 @@ class AuthControllerTest {
 
     @Test
     void login_devuelve200YToken() throws Exception {
-        when(userService.login(anyString(), anyString())).thenReturn("jwt-token");
+        when(authService.login(anyString(), anyString())).thenReturn("jwt-token");
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -64,7 +63,7 @@ class AuthControllerTest {
 
     @Test
     void register_emailDuplicado_devuelve400() throws Exception {
-        when(userService.register(anyString(), anyString(), anyString()))
+        when(authService.register(anyString(), anyString(), anyString()))
                 .thenThrow(new ApiException(HttpStatus.BAD_REQUEST, "No se pudo completar el registro"));
 
         mockMvc.perform(post("/api/auth/register")
@@ -73,6 +72,19 @@ class AuthControllerTest {
                                 {"name":"Juan","email":"juan@test.com","password":"password123"}
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(content().string("No se pudo completar el registro"));
+                .andExpect(jsonPath("$.message").value("No se pudo completar el registro"));
+    }
+
+    @Test
+    void verifyCode_devuelve200YJson() throws Exception {
+        when(authService.verifyCode(anyString(), anyString())).thenReturn("usuario verificado");
+
+        mockMvc.perform(post("/api/auth/verifyCode")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"juan@test.com","code":"123456"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("usuario verificado"));
     }
 }
