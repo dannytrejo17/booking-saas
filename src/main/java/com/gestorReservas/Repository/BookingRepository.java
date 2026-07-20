@@ -29,4 +29,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("requestedEnd") LocalDateTime requestedEnd,
             @Param("excludeId") Long excludeId
     );
+
+    @Query("""
+    SELECT COUNT(b) > 0 FROM Booking b
+    WHERE b.business.businessId = :businessId
+      AND b.customerPhone = :customerPhone
+      AND b.startAt >= :dayStart
+      AND b.startAt < :dayEnd
+    """)
+    boolean existsByBusinessAndPhoneOnDay(
+            @Param("businessId") Long businessId,
+            @Param("customerPhone") String customerPhone,
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("dayEnd") LocalDateTime dayEnd
+    );
 }

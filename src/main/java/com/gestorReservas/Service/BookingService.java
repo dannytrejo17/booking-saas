@@ -252,6 +252,9 @@ public class BookingService {
 
         validateBookingInput(serviceId, startDateTime, customerName, customerPhone);
 
+        String phone = normalizePhone(customerPhone);
+        validateOneBookingPerPhonePerDay(business, phone, startDateTime);
+
         Service service = getServiceForBusiness(serviceId, business);
 
 
@@ -307,7 +310,7 @@ public class BookingService {
         booking.setEmployee(employee);
         booking.setStartAt(startDateTime);
         booking.setCustomerName(customerName.trim());
-        booking.setCustomerPhone(customerPhone.trim());
+        booking.setCustomerPhone(phone);
         booking.setCreated_at(LocalDateTime.now());
         bookingRepository.save(booking);
 
@@ -556,6 +559,28 @@ public class BookingService {
             return candidate; // primer empleado que encaja y está libre
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, "no hay empleado disponible en ese horario");
+    }
+
+    private String normalizePhone(String phone) {
+        return phone.trim().replaceAll("[\\s\\-()]", "");
+    }
+
+    private void validateOneBookingPerPhonePerDay(Business business, String customerPhone, LocalDateTime startDateTime) {
+        String phone = normalizePhone(customerPhone);
+        LocalDate day = startDateTime.toLocalDate();
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+
+        boolean alreadyBooked = bookingRepository.existsByBusinessAndPhoneOnDay(
+                business.getBusinessId(),
+                phone,
+                dayStart,
+                dayEnd
+        );
+
+        if (alreadyBooked) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ya tienes una reserva este dia con este numero");
+        }
     }
 
 }
