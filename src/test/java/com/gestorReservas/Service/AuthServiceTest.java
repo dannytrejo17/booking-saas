@@ -18,11 +18,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -114,5 +117,63 @@ class AuthServiceTest {
 
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
         assertEquals("cuenta no verificada", ex.getMessage());
+    }
+
+    @Test
+    void verifyCode_codigoCorrecto_activaUsuario() {
+        User user = new User();
+        user.setEmail("juan@test.com");
+        user.setEnabled(false);
+        user.setVerificationCode("123456");
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
+        when(userRepository.findByEmail("juan@test.com")).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        String result = authService.verifyCode("juan@test.com", "123456");
+
+        assertEquals("usuario verificado", result);
+        assertTrue(user.isEnabled());
+        assertNull(user.getVerificationCode());
+        assertNull(user.getVerificationCodeExpiresAt());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void verifyCode_usuarioNoExiste_lanzaNotFound() {
+        when(userRepository.findByEmail("juan@test.com")).thenReturn(Optional.empty());
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> authService.verifyCode("juan@test.com", "123456"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertEquals("usuario no encontrado", ex.getMessage());
+    }
+
+    @Test
+    void verifyCode_codigoIncorrecto_lanzaBadRequest() {
+        User user = new User();
+        user.setVerificationCode("123456");
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(10));
+        when(userRepository.findByEmail("juan@test.com")).thenReturn(Optional.of(user));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> authService.verifyCode("juan@test.com", "000000"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals("codigo incorrecto", ex.getMessage());
+    }
+
+    @Test
+    void verifyCode_codigoExpirado_lanzaBadRequest() {
+        User user = new User();
+        user.setVerificationCode("123456");
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().minusMinutes(1));
+        when(userRepository.findByEmail("juan@test.com")).thenReturn(Optional.of(user));
+
+        ApiException ex = assertThrows(ApiException.class,
+                () -> authService.verifyCode("juan@test.com", "123456"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals("codigo incorrecto o cuenta verificada", ex.getMessage());
     }
 }
