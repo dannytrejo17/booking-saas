@@ -10,4 +10,8 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     boolean existsBySlug(String slug);
 
     Optional<Business> findBySlug(String slug);
+
+    Optional<Business> findByStripeCustomerId(String stripeCustomerId);
+
+    Optional<Business> findByStripeSubscriptionId(String stripeSubscriptionId);
 }
