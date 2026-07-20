@@ -32,6 +32,9 @@ public class Business {
     private String address;
     private String logo;
     private String coverImage;
+    private String stripeCustomerId;
+    private String stripeSubscriptionId;
+    private String subscriptionStatus = "inactive";
     private LocalDateTime created_at;
     private LocalDateTime updatedAt;
 }
