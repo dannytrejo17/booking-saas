@@ -90,4 +90,18 @@ public class AuthService {
         userRepository.save(user);
         return "usuario verificado";
     }
+
+    public String resendCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "usuario no encontrado"));
+
+        if (user.isEnabled()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "cuenta ya verificada");
+        }
+
+        assignVerificationCode(user);
+        userRepository.save(user);
+        emailService.sendVerificationCode(email, user.getVerificationCode());
+        return "codigo reenviado";
+    }
 }

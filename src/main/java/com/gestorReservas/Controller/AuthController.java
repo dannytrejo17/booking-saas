@@ -35,9 +35,14 @@ public class AuthController {
     }
 
     @PostMapping("/verifyCode")
-    public ResponseEntity<Map<String,String>> verifyCode(@RequestBody VerifyRequest verifyRequest){
+    public ResponseEntity<Map<String, String>> verifyCode(@RequestBody VerifyRequest verifyRequest) {
         String status = authService.verifyCode(verifyRequest.getEmail(), verifyRequest.getCode());
         return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", status));
     }
 
+    @PostMapping("/resendCode")
+    public ResponseEntity<Map<String, String>> resendCode(@RequestBody VerifyRequest request) {
+        String status = authService.resendCode(request.getEmail());
+        return ResponseEntity.ok(Map.of("message", status));
+    }
 }
