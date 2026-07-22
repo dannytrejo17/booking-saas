@@ -96,8 +96,14 @@ public class BusinessService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "no tienes negocio");
         }
 
+        String normalizedSlug = slug.trim().toLowerCase();
+        String currentSlug = business.getSlug() == null ? "" : business.getSlug().trim().toLowerCase();
+        if (!normalizedSlug.equals(currentSlug) && businessRepository.existsBySlug(normalizedSlug)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "el slug ya esta en uso");
+        }
+
         business.setName(name);
-        business.setSlug(slug);
+        business.setSlug(normalizedSlug);
         business.setEmail(email);
         business.setPhone(phone);
         business.setAddress(address);
