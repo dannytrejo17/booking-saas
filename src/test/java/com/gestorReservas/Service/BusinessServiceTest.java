@@ -105,7 +105,7 @@ class BusinessServiceTest {
                 ));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
-        assertEquals("name, slug y email son obligatorios", ex.getMessage());
+        assertEquals("name y slug son obligatorios", ex.getMessage());
     }
 
     @Test

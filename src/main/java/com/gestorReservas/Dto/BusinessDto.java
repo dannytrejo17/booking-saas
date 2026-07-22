@@ -1,6 +1,9 @@
 package com.gestorReservas.Dto;
 
 import com.gestorReservas.Model.Business;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,8 +14,13 @@ import lombok.NoArgsConstructor;
 public class BusinessDto {
 
     private Long businessId;
+    @NotBlank(message = "el nombre es requerido")
+    @Size(min = 2 , max = 50, message = "el nombre debe tener entre 2 y 50 caracteres")
     private String name;
+    @NotBlank(message = "el slug es requerido")
+    @Size(min = 2 , max = 50, message = "el slug debe tener entre 2 y 50 caracteres")
     private String slug;
+    @Email(message = "email invalido")
     private String email;
     private String phone;
     private String address;

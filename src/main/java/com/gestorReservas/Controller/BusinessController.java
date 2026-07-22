@@ -1,8 +1,8 @@
 package com.gestorReservas.Controller;
 
 import com.gestorReservas.Dto.BusinessDto;
-import com.gestorReservas.Model.Business;
 import com.gestorReservas.Service.BusinessService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,14 +23,14 @@ public class BusinessController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<Map<String,String>> createBusiness(@RequestBody Business business, Principal principal){
-        String status = businessService.createBusiness(principal, business.getName(), business.getSlug(),
-                business.getEmail(), business.getPhone(), business.getAddress(), business.getLogo() );
+    public ResponseEntity<Map<String,String>> createBusiness(@Valid @RequestBody BusinessDto businessDto, Principal principal){
+        String status = businessService.createBusiness(principal, businessDto.getName(), businessDto.getSlug(),
+                businessDto.getEmail(), businessDto.getPhone(), businessDto.getAddress(), businessDto.getLogo() );
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
 
     @PutMapping()
-    public ResponseEntity<Map<String,String>> EditBusiness(@RequestBody BusinessDto businessDto, Principal principal){
+    public ResponseEntity<Map<String,String>> EditBusiness(@Valid @RequestBody BusinessDto businessDto, Principal principal){
 
         String status = businessService.editBusiness(businessDto.getName(),businessDto.getSlug()
                 , businessDto.getEmail(), businessDto.getPhone(), businessDto.getAddress(), businessDto.getLogo(), principal );

@@ -48,13 +48,13 @@ public class BusinessService {
         User owner = userRepository.findByEmail(principal.getName())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "usuario no encontrado"));
 
-        validateCreateBusiness(owner, name, slug, email);
+        validateCreateBusiness(owner, name, slug);
 
         Business business = new Business();
         business.setUser(owner);
         business.setName(name.trim());
         business.setSlug(slug.trim().toLowerCase());
-        business.setEmail(email.trim());
+        business.setEmail(isBlank(email) ? null : email.trim());
         business.setPhone(phone);
         business.setAddress(address);
         business.setLogo(logo);
@@ -66,9 +66,9 @@ public class BusinessService {
         return "negocio creado";
     }
 
-    private void validateCreateBusiness(User owner, String name, String slug, String email) {
-        if (isBlank(name) || isBlank(slug) || isBlank(email)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "name, slug y email son obligatorios");
+    private void validateCreateBusiness(User owner, String name, String slug) {
+        if (isBlank(name) || isBlank(slug)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "name y slug son obligatorios");
         }
 
         if (owner.getBusiness() != null) {
