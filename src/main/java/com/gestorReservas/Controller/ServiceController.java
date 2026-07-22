@@ -2,16 +2,12 @@ package com.gestorReservas.Controller;
 
 
 import com.gestorReservas.Dto.ServiceDto;
-import com.gestorReservas.Model.Service;
-import com.gestorReservas.Repository.ServiceRepository;
+
 import com.gestorReservas.Service.BusinessServiceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +37,7 @@ public class ServiceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String,String>> EditServices(@PathVariable Long id, @RequestBody ServiceDto serviceDto, Principal principal){
+    public ResponseEntity<Map<String,String>> EditServices(@PathVariable Long id, @Valid @RequestBody ServiceDto serviceDto, Principal principal){
 
         String status = businessServiceService.editProduct(principal, serviceDto.getName(),
                 serviceDto.getPrice(), serviceDto.getDuration(), id );

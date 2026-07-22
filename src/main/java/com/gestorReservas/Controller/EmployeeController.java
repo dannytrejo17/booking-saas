@@ -4,7 +4,7 @@ import com.gestorReservas.Dto.EmployeeDto;
 import com.gestorReservas.Dto.ScheduleDto;
 import com.gestorReservas.Dto.ScheduleRequest;
 import com.gestorReservas.Service.EmployeeService;
-import org.apache.catalina.connector.Response;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +25,7 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String,String>> createEmployee(@RequestBody EmployeeDto req, Principal principal) {
+    public ResponseEntity<Map<String,String>> createEmployee(@Valid @RequestBody EmployeeDto req, Principal principal) {
         String status = employeeService.createEmployee(principal, req.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", status));
     }
@@ -37,7 +37,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String,String>> editEmployee(@PathVariable Long id, @RequestBody EmployeeDto req, Principal principal) {
+    public ResponseEntity<Map<String,String>> editEmployee(@PathVariable Long id, @Valid @RequestBody EmployeeDto req, Principal principal) {
         String status = employeeService.editEmployee(principal, id, req.getName(), req.isActive());
         return ResponseEntity.ok(Map.of("message", status));
     }
