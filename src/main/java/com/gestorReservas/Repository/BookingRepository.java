@@ -16,6 +16,33 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByEmployeeId(Long employeeId);
 
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.service
+        WHERE b.employee.id = :employeeId
+          AND b.startAt >= :dayStart
+          AND b.startAt < :dayEnd
+        """)
+    List<Booking> findByEmployeeIdAndStartAtBetween(
+            @Param("employeeId") Long employeeId,
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("dayEnd") LocalDateTime dayEnd
+    );
+
+    @Query("""
+        SELECT b FROM Booking b
+        JOIN FETCH b.service
+        JOIN FETCH b.employee
+        WHERE b.employee.id IN :employeeIds
+          AND b.startAt >= :dayStart
+          AND b.startAt < :dayEnd
+        """)
+    List<Booking> findByEmployeeIdInAndStartAtBetween(
+            @Param("employeeIds") List<Long> employeeIds,
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("dayEnd") LocalDateTime dayEnd
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT b FROM Booking b

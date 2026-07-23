@@ -41,7 +41,7 @@ public class PublicBookingController {
     public ResponseEntity<List<LocalDateTime>> getAvailability(
             @PathVariable String slug,
             @RequestParam Long serviceId,
-            @RequestParam Long employeeId,
+            @RequestParam(required = false) Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         List<LocalDateTime> slots = bookingService.getAvailability(slug, serviceId, employeeId, date);

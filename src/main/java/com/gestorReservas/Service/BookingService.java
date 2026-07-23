@@ -110,9 +110,8 @@ public class BookingService {
         return "reserva creada";
     }
 
-    private boolean hasOverlap(Long employeeId, LocalDateTime requestedStartAt, LocalDateTime requestedEndAt, Long currentBookingId) {
-        List<Booking> employeeBookings = bookingRepository.findByEmployeeId(employeeId);
-
+    private boolean hasOverlap(List<Booking> employeeBookings, LocalDateTime requestedStartAt,
+                               LocalDateTime requestedEndAt, Long currentBookingId) {
         for (Booking employeeBooking : employeeBookings) {
             if (currentBookingId != null && currentBookingId.equals(employeeBooking.getId())) {
                 continue;
@@ -321,12 +320,35 @@ public class BookingService {
         Business business = businessRepository.findBySlug(slug.trim().toLowerCase())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "negocio no encontrado"));
 
-        if (serviceId == null || employeeId == null || date == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "serviceId, employeeId y date son obligatorios");
+        if (serviceId == null || date == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "serviceId y date son obligatorios");
         }
 
         Service service = getServiceForBusiness(serviceId, business);
+        int duration = service.getDuration();
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
 
+        List<BusinessSchedule> businessSchedules = businessScheduleRepository
+                .findByBusiness_BusinessIdAndDayOfWeek(business.getBusinessId(), dayOfWeek);
+
+        if (businessSchedules.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        if (employeeId == null) {
+            return getAvailabilityForAnyEmployee(business, dayOfWeek, date, duration, businessSchedules);
+        }
+
+        return getAvailabilityForEmployee(business, employeeId, date, duration, businessSchedules);
+    }
+
+    private List<LocalDateTime> getAvailabilityForEmployee(
+            Business business,
+            Long employeeId,
+            LocalDate date,
+            int duration,
+            List<BusinessSchedule> businessSchedules
+    ) {
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "empleado no encontrado"));
 
@@ -338,17 +360,7 @@ public class BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "el empleado no está activo");
         }
 
-
-        int duration = service.getDuration();
-
         DayOfWeek dayOfWeek = date.getDayOfWeek();
-        List<BusinessSchedule> businessSchedules = businessScheduleRepository
-                .findByBusiness_BusinessIdAndDayOfWeek(business.getBusinessId(), dayOfWeek);
-
-        if (businessSchedules.isEmpty()) {
-            return Collections.emptyList();
-        }
-
         List<EmployeeSchedule> employeeSchedules =
                 employeeScheduleRepository.findByEmployee_IdAndDayOfWeek(employeeId, dayOfWeek);
 
@@ -356,12 +368,16 @@ public class BookingService {
             return Collections.emptyList();
         }
 
-        List<LocalDateTime> available = new ArrayList<>();
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = dayStart.plusDays(1);
+        List<Booking> employeeBookings =
+                bookingRepository.findByEmployeeIdAndStartAtBetween(employeeId, dayStart, dayEnd);
+
+        Set<LocalDateTime> availableSlots = new LinkedHashSet<>();
         LocalDateTime now = LocalDateTime.now();
 
         for (BusinessSchedule businessSchedule : businessSchedules) {
             for (EmployeeSchedule employeeSchedule : employeeSchedules) {
-
                 LocalTime since;
                 if (businessSchedule.getOpenTime().isAfter(employeeSchedule.getOpenTime())) {
                     since = businessSchedule.getOpenTime();
@@ -380,23 +396,94 @@ public class BookingService {
                     continue;
                 }
 
-                LocalDateTime startCandidate = date.atTime(since);
+                LocalDateTime slotStart = date.atTime(since);
                 LocalDateTime endOfWindow = date.atTime(until);
 
-                while (!startCandidate.plusMinutes(duration).isAfter(endOfWindow)) {
-                    if (!startCandidate.isBefore(now)) {
-                        LocalDateTime endOfService = startCandidate.plusMinutes(duration);
-                        if (!hasOverlap(employee.getId(), startCandidate, endOfService, null)) {
-                            available.add(startCandidate);
+                while (!slotStart.plusMinutes(duration).isAfter(endOfWindow)) {
+                    if (!slotStart.isBefore(now)) {
+                        LocalDateTime slotEnd = slotStart.plusMinutes(duration);
+                        if (!hasOverlap(employeeBookings, slotStart, slotEnd, null)) {
+                            availableSlots.add(slotStart);
                         }
                     }
-                    startCandidate = startCandidate.plusMinutes(30);
+                    slotStart = slotStart.plusMinutes(30);
                 }
             }
         }
 
-        return available;
+        return new ArrayList<>(availableSlots);
     }
+
+    private List<LocalDateTime> getAvailabilityForAnyEmployee(
+            Business business,
+            DayOfWeek dayOfWeek,
+            LocalDate date,
+            int duration,
+            List<BusinessSchedule> businessSchedules
+    ) {
+        List<EmployeeSchedule> allSchedules =
+                employeeScheduleRepository.findActiveSchedulesOnDay(business.getBusinessId(), dayOfWeek);
+
+        if (allSchedules == null || allSchedules.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, List<EmployeeSchedule>> schedulesByEmployee = new HashMap<>();
+        for (EmployeeSchedule schedule : allSchedules) {
+            Long id = schedule.getEmployee().getId();
+            schedulesByEmployee.computeIfAbsent(id, k -> new ArrayList<>()).add(schedule);
+        }
+
+        List<Long> employeeIds = new ArrayList<>(schedulesByEmployee.keySet());
+        LocalDateTime dayStart = date.atStartOfDay();
+        LocalDateTime dayEnd = dayStart.plusDays(1);
+
+        List<Booking> allBookings = employeeIds.isEmpty()
+                ? Collections.emptyList()
+                : bookingRepository.findByEmployeeIdInAndStartAtBetween(employeeIds, dayStart, dayEnd);
+
+        Map<Long, List<Booking>> bookingsByEmployee = new HashMap<>();
+        for (Booking booking : allBookings) {
+            Long id = booking.getEmployee().getId();
+            bookingsByEmployee.computeIfAbsent(id, k -> new ArrayList<>()).add(booking);
+        }
+
+        Set<LocalDateTime> availableSlots = new LinkedHashSet<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (BusinessSchedule businessSchedule : businessSchedules) {
+            LocalDateTime slotStart = date.atTime(businessSchedule.getOpenTime());
+            LocalDateTime businessCloseDateTime = date.atTime(businessSchedule.getCloseTime());
+
+            while (!slotStart.plusMinutes(duration).isAfter(businessCloseDateTime)) {
+                if (!slotStart.isBefore(now)) {
+                    LocalDateTime slotEnd = slotStart.plusMinutes(duration);
+                    LocalTime slotStartTime = slotStart.toLocalTime();
+                    LocalTime slotEndTime = slotEnd.toLocalTime();
+
+                    for (Long employeeId : schedulesByEmployee.keySet()) {
+                        List<EmployeeSchedule> employeeDaySchedules = schedulesByEmployee.get(employeeId);
+
+                        boolean employeeWorksThisSlot = verifyEmployeeScheduleAndBusinessFits(
+                                employeeDaySchedules, businessSchedules, slotStartTime, slotEndTime);
+
+                        List<Booking> employeeBookings =
+                                bookingsByEmployee.getOrDefault(employeeId, Collections.emptyList());
+                        boolean employeeIsFree = !hasOverlap(employeeBookings, slotStart, slotEnd, null);
+
+                        if (employeeWorksThisSlot && employeeIsFree) {
+                            availableSlots.add(slotStart);
+                            break;
+                        }
+                    }
+                }
+                slotStart = slotStart.plusMinutes(30);
+            }
+        }
+
+        return new ArrayList<>(availableSlots);
+    }
+
 
     private Business getBusinessFromPrincipal(Principal principal) {
         User user = userRepository.findByEmail(principal.getName())
@@ -556,7 +643,7 @@ public class BookingService {
             if (hasOverlapWithLock(candidate.getId(), startDateAt, endDateAt, null)) {
                 continue;
             }
-            return candidate; // primer empleado que encaja y está libre
+            return candidate; 
         }
         throw new ApiException(HttpStatus.BAD_REQUEST, "no hay empleado disponible en ese horario");
     }
